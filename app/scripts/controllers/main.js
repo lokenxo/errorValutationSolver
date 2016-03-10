@@ -8,6 +8,7 @@
  * Controller of the errorValutationSolverApp
  */
 angular.module('errorValutationSolverApp').controller('MainCtrl', function ($scope, treeGenerator) {
+	
    $scope.eval = '';
    $scope.inputbox = '';
 
