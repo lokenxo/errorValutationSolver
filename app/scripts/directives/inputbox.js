@@ -10,7 +10,6 @@ angular.module('errorValutationSolverApp').directive('inputbox', function () {
    	function link(scope)
 	{
 		var input = document.getElementById('inputbox');
-		console.log(input);
 		scope.inputbox = input;
 	}
 	return { templateUrl: 'views/input-box.html', link: link };

@@ -11,7 +11,6 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 {
 	var service = {};
 
-
   	//visita a partire dalle foglie a ritroso fino alla radice, così propaga all'indietro i valori valutati
   	function setValueOfLeaves(lista)
   	{
@@ -27,6 +26,7 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   				if(elem.type=="Identifier")
 		 		{
 					elem.label=elem.name;
+  					elem.erroreLocale = 'E_'+elem.id;
 				}
 		 		if(elem.type=="Literal")
 		 		{
@@ -36,23 +36,19 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 				list.push(elem);
   			}
   		}
-  		console.log(coda);
   		while(coda.length!=0)
   		{
   			//Per ogni valore della coda, visito il parent e lo inserisco in coda, se non è stato già visitato, cioè è in list
   			var c = coda[0];
-  			//console.log(c);
   			for(var j=0; j<lista.length; j++)
   			{
-  				//console.log(lista[j]);
   				if(c.parent == lista[j].id)
   				{
-  					console.log('trovato parent');
+  					c.parentNode=lista[j];
   					//Ecco il parent, calcolo il valore se non è già in lista
   					coda.push(lista[j]);
   					if(c.type=="BinaryExpression")
 			 		{
-			 			console.log('binart');
 			 			if(c.left.type=='BinaryExpression' && c.right.type=='BinaryExpression')
 			 			{
 			 				c.label='('+c.left.label+')'+c.operator+'('+c.right.label+')';
@@ -80,7 +76,6 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   					//l'elemento radice
   					if(c.type=="BinaryExpression")
 			 		{
-			 			console.log('binartRadice');
 			 			if(c.left.type=='BinaryExpression' && c.right.type=='BinaryExpression')
 			 			{
 			 				c.label='('+c.left.label+')'+c.operator+'('+c.right.label+')';
@@ -92,12 +87,10 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 			 			if(c.left.type!='BinaryExpression' && c.right.type=='BinaryExpression')
 			 			{
 			 				c.label=c.left.label+c.operator+'('+c.right.label+')';
-
 			 			}
 			 			if(c.left.type!='BinaryExpression' && c.right.type!='BinaryExpression')
 			 			{
 			 				c.label=c.left.label+c.operator+c.right.label;
-
 			 			}
 			 		}
   				}
@@ -120,7 +113,6 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   			}
   			if(!trovato)
   			{
-  				//Aggiungo
   				listNoDuplicates.push(list[i]);
   			}
   		}
@@ -128,6 +120,110 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   		return listNoDuplicates;
   	}
 
+  	function calcolaErroriLocali(lista)
+  	{
+  		for(var i =0; i< lista.length; i++)
+  		{
+  			var elem = lista[i];
+  			console.log(elem);
+
+			if(elem.type == "BinaryExpression")
+			{
+				//Calcola l'errore locale
+				if(elem.left.type!='Literal' && elem.right.type!='Literal')
+				{
+					elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl + '] + ['+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl+' ]'; 
+
+				}
+				if(elem.left.type=='Literal' && elem.right.type!='Literal')
+				{
+					elem.erroreLocale = 'E('+elem.id+') + [ '+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl +' ]'; 
+
+				}
+				if(elem.left.type!='Literal' && elem.right.type=='Literal')
+				{
+					elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl +' ]';
+
+				}
+				if(elem.left.type=='Literal' && elem.right.type=='Literal')
+				{
+					elem.erroreLocale = 'E('+elem.id+')';
+
+				}
+			}
+  		}
+  		return lista;
+  	}
+
+  	function setValuesOfEdges(lista)
+  	{
+  		//Per ogni nodo:
+  		//-Calcola il valore di ogni arco che conduce al figlio
+  		for(var i =0; i< lista.length; i++)
+  		{
+  			var elem = lista[i];
+  			console.log(elem);
+
+  			var left = elem.left;
+  			var right = elem.right;
+  			if(elem.parentNode!=null)
+  			{
+  				//se non è il nodo radice, calcolo il valore dell'arco entrante(ogni nodo ha solo 1 arco entrante, tranne il root)
+  				//elem.coefficienteAmpl = ""+elem.label+"/"+elem.parentNode.label+"* partialDerivative("+elem.parentNode.label+","+elem.label+")";
+  				//In base all'operazione trovo il coefficiente di amplificazione
+  				if(elem.parentNode.type == "BinaryExpression" && elem.type != "Literal")
+  				{
+
+  					console.log(elem.parentNode.operator);
+	  				switch(elem.parentNode.operator)
+	  				{
+	  					case '+': 
+	  					{
+	  						elem.coefficienteAmpl = "( "+elem.label+" ) / ( "+elem.parentNode.label+" )";
+	  						break;
+	  					}
+	  					case '-': 
+	  					{
+	  						if(elem.id==elem.parentNode.left.id)
+	  						{
+	  							elem.coefficienteAmpl = "( "+elem.label+" ) / ( "+elem.parentNode.label+" )";
+	  						}
+	  						if(elem.id==elem.parentNode.right.id)
+	  						{
+	  							elem.coefficienteAmpl = "( -"+elem.label+" ) / ( "+elem.parentNode.label+" )";
+	  						}
+	  						break;
+	  					}
+	  					case '*': 
+	  					{
+	  						elem.coefficienteAmpl = 1;
+	  						break;
+	  					}
+	  					case '/': 
+	  					{
+	  						if(elem.id==elem.parentNode.left.id)
+	  						{
+	  							elem.coefficienteAmpl = 1;
+	  						}
+	  						if(elem.id==elem.parentNode.right.id)
+	  						{
+	  							elem.coefficienteAmpl = -1;
+	  						}
+	  						break;
+	  					}
+	  					case '^':
+	  					{
+	  						var numberOfExp = elem.parentNode.right.label;
+	  						elem.coefficienteAmpl = 1*numberOfExp;
+	  						break;
+	  					}
+	  				}
+	  			}
+  			}
+  		}
+  		return lista;
+
+  	}
 
 	service.createTree = function(treeFile, func, callback)
 	{
@@ -168,6 +264,10 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 
 		lista = setValueOfLeaves(lista);
 		lista.push(x);
+		lista = setValuesOfEdges(lista);
+		lista = calcolaErroriLocali(lista);
+		console.log(lista);
+
 		
 		return callback(lista);
 	}
