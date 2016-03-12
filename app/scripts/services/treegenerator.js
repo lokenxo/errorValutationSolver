@@ -11,6 +11,10 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 {
 	var service = {};
 
+	service.erroreAlgoritmico = '';
+	service.erroreInerente ='';
+	service.erroreTotale='';
+
   	//visita a partire dalle foglie a ritroso fino alla radice, così propaga all'indietro i valori valutati
   	function setValueOfLeaves(lista)
   	{
@@ -26,17 +30,18 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   				if(elem.type=="Identifier")
 		 		{
 					elem.label=elem.name;
-  					elem.erroreLocale = 'E_'+elem.id;
+					elem.erroreInerente==String.fromCharCode(65 + elem.id);
 				}
 		 		if(elem.type=="Literal")
 		 		{
 	  				elem.label=elem.raw;
-	  				elem.erroreLocale = 'E_'+elem.id;
+	  				elem.erroreInerente==String.fromCharCode(65 + elem.id);
 				}
 				coda.push(elem);
 				list.push(elem);
   			}
   		}
+
   		while(coda.length!=0)
   		{
   			//Per ogni valore della coda, visito il parent e lo inserisco in coda, se non è stato già visitato, cioè è in list
@@ -125,55 +130,159 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 
   	function calcolaErroriLocali(lista)
   	{
-  		for(var i =lista.length-1; i>=0; i--)
+		var Fraction = algebra.Fraction;
+		var Expression = algebra.Expression;
+		var Equation = algebra.Equation;
+  		for(var i =0; i<lista.length; i++)
   		{
   			var elem = lista[i];
-  			console.log(elem);
   			if(elem.type=='Literal')
   			{
-  				elem.erroreLocale='0';
   				elem.coefficienteAmpl='0';
+  				elem.erroreInerente=String.fromCharCode(65 + elem.id);
+				
   			}
+  			if(elem.type=='Identifier')
+  			{
+  				elem.erroreInerente=String.fromCharCode(65 + elem.id);
+				
+  			}
+  		}
+
+  		//Ordina i nodi per ID ( dal più grande al più piccolo)
+  		var lista_ord =[];
+  		for(var i=0; i<lista.length; i++)
+  		{
+  			lista_ord[lista.length-lista[i].id-1] = lista[i];
+  		}
+  		lista=lista_ord;
+
+
+  		for(var i =0; i<lista.length; i++)
+  		{
+  			var elem = lista[i];
+  		
 
 			if(elem.type == "BinaryExpression")
 			{
 
-
-
-				//Calcola l'errore locale Literal
-				var expr = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl + '] + ['+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl+' ]'; 
-				elem.erroreLocale = expr;
-
-				
-			/*	if(elem.left.type!='Literal' && elem.right.type!='Literal')
+				//Calcola l'errore locale algoritmico
+				if(elem.left.erroreAlgoritmico==null && elem.right.erroreAlgoritmico!=null)
 				{
-					elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl + '] + ['+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl+' ]'; 
-
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.right.erroreAlgoritmico+') * '+elem.right.coefficienteAmpl + ')';
+					elem.erroreAlgoritmico = expr;
 				}
-				else
+				if(elem.left.erroreAlgoritmico!= null && elem.right.erroreAlgoritmico==null)
 				{
-					if(elem.left.type=='Literal' && elem.right.type!='Literal')
-					{
-						elem.erroreLocale = 'E('+elem.id+') + [ '+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl +' ]'; 
-
-					}
-					else
-					{
-						if(elem.left.type!='Literal' && elem.right.type=='Literal')
-						{
-							elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl +' ]';
-
-						}
-						else
-						{
-							elem.erroreLocale = 'E('+elem.id+')';
-						}
-					}
-					
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.left.erroreAlgoritmico+') * '+elem.left.coefficienteAmpl + ')';
+					elem.erroreAlgoritmico = expr;
 				}
-				*/
+				if(elem.right.erroreAlgoritmico!=null && elem.left.erroreAlgoritmico!=null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.left.erroreAlgoritmico+') * '+elem.left.coefficienteAmpl + ') + ('+'( '+elem.right.erroreAlgoritmico+') * '+elem.right.coefficienteAmpl+' )'; 
+					elem.erroreAlgoritmico = expr;
+				}
+				if(elem.right.erroreAlgoritmico== null && elem.left.erroreAlgoritmico == null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+''; 
+					elem.erroreAlgoritmico = expr;
+				}
 			}
   		}
+
+  		for(var i =0 ; i< lista.length; i++)
+  		{
+
+			var elem = lista[i];
+  			//Calcola l'errore locale TOTALE
+
+			if(elem.type == "BinaryExpression")
+			{
+  				//Calcola l'errore locale algoritmico
+				if(elem.left.erroreInerente==null && elem.right.erroreInerente!=null)
+				{
+					var expr = '( '+' ( '+elem.right.erroreInerente+' ) * '+elem.right.coefficienteAmpl + ')';
+					elem.erroreInerente = expr;
+				}
+				if(elem.left.erroreInerente!= null && elem.right.erroreInerente==null)
+				{
+
+					var expr = '( '+' ( '+elem.left.erroreInerente+' ) * '+elem.left.coefficienteAmpl + ')';
+					elem.erroreInerente = expr;
+				}
+				if(elem.right.erroreInerente!=null && elem.left.erroreInerente!=null)
+				{
+
+					var expr = '( '+' ( '+elem.left.erroreInerente+' ) * '+elem.left.coefficienteAmpl + ') + ('+'( '+elem.right.erroreInerente+' ) * '+elem.right.coefficienteAmpl+' )'; 
+					elem.erroreInerente = expr;
+				}
+				if(elem.right.erroreInerente== null && elem.left.erroreInerente == null)
+				{
+					var expr = elem.erroreInerente;
+					elem.erroreInerente = expr;
+				}
+			}
+  		}
+
+  		for(var i =0 ; i< lista.length; i++)
+  		{
+
+			var elem = lista[i];
+  			//Calcola l'errore locale TOTALE
+
+  			if(elem.left==null && elem.right==null)
+  			{
+  				elem.erroreTotale = elem.erroreInerente;
+  			}
+			if(elem.type == "BinaryExpression")
+			{
+  				//Calcola l'errore locale algoritmico
+				if(elem.left.erroreTotale==null && elem.right.erroreTotale!=null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.right.erroreTotale+' ) * '+elem.right.coefficienteAmpl + ')';
+					elem.erroreTotale = expr;
+				}
+				if(elem.left.erroreTotale!= null && elem.right.erroreTotale==null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.left.erroreTotale+' ) * '+elem.left.coefficienteAmpl + ')';
+					elem.erroreTotale = expr;
+				}
+				if(elem.right.erroreTotale!=null && elem.left.erroreTotale!=null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+' + ('+'( '+elem.left.erroreTotale+' ) * '+elem.left.coefficienteAmpl + ') + ('+'( '+elem.right.erroreTotale+' ) * '+elem.right.coefficienteAmpl+' )'; 
+					elem.erroreTotale = expr;
+				}
+				if(elem.right.erroreTotale== null && elem.left.erroreTotale == null)
+				{
+					var expr = String.fromCharCode(97 + elem.id)+''; 
+					elem.erroreTotale = expr;
+				}
+			}
+  		}
+
+  		return lista;
+  	}
+
+  	function calcolaErroreAlgoritmico(lista)
+  	{
+
+  		//l'errore locale del nodo radice è l'errore algoritmico totale
+  		return lista[lista.length-1].erroreAlgoritmico;
+  	}
+
+  	function calcolaErroreInerente(lista)
+  	{
+  		return lista[lista.length-1].erroreInerente;
+  	}
+
+  	function calcolaErroreTotale(lista)
+  	{
+  		return lista[lista.length-1].erroreTotale;
+  	}
+
+  	function tokenizzaVariabiliErrore(lista)
+  	{
+
   		return lista;
   	}
 
@@ -184,7 +293,6 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   		for(var i =0; i< lista.length; i++)
   		{
   			var elem = lista[i];
-  			console.log(elem);
 
   			var left = elem.left;
   			var right = elem.right;
@@ -196,7 +304,6 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   				if(elem.parentNode.type == "BinaryExpression")
   				{
 
-  					console.log(elem.parentNode.operator);
 	  				switch(elem.parentNode.operator)
 	  				{
 	  					case '+': 
@@ -286,15 +393,37 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 		}
 
 		lista = setValueOfLeaves(lista);
-		console.log(lista);
 		lista.push(x);
 		lista = setValuesOfEdges(lista);
 		lista = calcolaErroriLocali(lista);
-		console.log(lista);
 
-		
+		//E(id) è l'errore dovuto all'operazione
+		//E_(id) è l'errore di rappresentazione della variabile, dovuto alla conversione in numero di macchina
+
+		lista.erroreAlgoritmico = calcolaErroreAlgoritmico(lista);
+		lista.erroreInerente = calcolaErroreInerente(lista);
+		lista.erroreTotale = calcolaErroreTotale(lista);
 		return callback(lista);
 	}
 
+	service.valutaErroreAlgoritmico = function(lista, callback)
+	{
+		//Trasforma tutti i - in +
+		var newList = "";
+		for(var i =0 ; i< lista.length;i++)
+		{
+			if(lista[i]=='-')
+			{
+				newList[i]='+';
+			}
+			else
+			{
+				newList[i]=lista[i];
+			}
+		}
+		console.log(newList);
+
+		return callback(newList)
+	}
 	return service;
 });

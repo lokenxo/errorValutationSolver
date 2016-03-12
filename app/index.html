@@ -9,6 +9,8 @@
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="bower_components/KaTeX/dist/katex.min.css" />
+
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.tmp) styles/main.css -->
@@ -38,6 +40,7 @@
        ga('send', 'pageview');
     </script>
 
+
     <!-- build:js(.) scripts/vendor.js -->
     <!-- bower:js -->
     <script src="bower_components/jquery/dist/jquery.js"></script>
@@ -54,9 +57,13 @@
     <script src="bower_components/graphdracula/lib/dracula_algorithms.js"></script>
     <script src="bower_components/graphdracula/lib/dracula_graffle.js"></script>
     <script src="bower_components/graphdracula/lib/dracula_graph.js"></script>
+    <script src="bower_components/KaTeX/dist/katex.min.js"></script>
+
 
     <!-- endbower -->
     <!-- endbuild -->
+        <script src="scripts/libs/algebra.min.js"></script>
+
 
         <!-- build:js({.tmp,app}) scripts/scripts.js -->
         <script src="scripts/app.js"></script>
@@ -64,6 +71,7 @@
         <script src="scripts/controllers/about.js"></script>
         <script src="scripts/directives/inputbox.js"></script>
         <script src="scripts/services/treegenerator.js"></script>
+        <script src="scripts/directives/outputbox.js"></script>
         <!-- endbuild -->
 </body>
 </html>
