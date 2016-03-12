@@ -31,6 +31,7 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 		 		if(elem.type=="Literal")
 		 		{
 	  				elem.label=elem.raw;
+	  				elem.erroreLocale = 'E_'+elem.id;
 				}
 				coda.push(elem);
 				list.push(elem);
@@ -45,8 +46,10 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   				if(c.parent == lista[j].id)
   				{
   					c.parentNode=lista[j];
+
   					//Ecco il parent, calcolo il valore se non è già in lista
   					coda.push(lista[j]);
+
   					if(c.type=="BinaryExpression")
 			 		{
 			 			if(c.left.type=='BinaryExpression' && c.right.type=='BinaryExpression')
@@ -122,34 +125,53 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 
   	function calcolaErroriLocali(lista)
   	{
-  		for(var i =0; i< lista.length; i++)
+  		for(var i =lista.length-1; i>=0; i--)
   		{
   			var elem = lista[i];
   			console.log(elem);
+  			if(elem.type=='Literal')
+  			{
+  				elem.erroreLocale='0';
+  				elem.coefficienteAmpl='0';
+  			}
 
 			if(elem.type == "BinaryExpression")
 			{
-				//Calcola l'errore locale
-				if(elem.left.type!='Literal' && elem.right.type!='Literal')
+
+
+
+				//Calcola l'errore locale Literal
+				var expr = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl + '] + ['+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl+' ]'; 
+				elem.erroreLocale = expr;
+
+				
+			/*	if(elem.left.type!='Literal' && elem.right.type!='Literal')
 				{
 					elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl + '] + ['+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl+' ]'; 
 
 				}
-				if(elem.left.type=='Literal' && elem.right.type!='Literal')
+				else
 				{
-					elem.erroreLocale = 'E('+elem.id+') + [ '+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl +' ]'; 
+					if(elem.left.type=='Literal' && elem.right.type!='Literal')
+					{
+						elem.erroreLocale = 'E('+elem.id+') + [ '+'[ '+elem.right.erroreLocale+'] * '+elem.right.coefficienteAmpl +' ]'; 
 
-				}
-				if(elem.left.type!='Literal' && elem.right.type=='Literal')
-				{
-					elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl +' ]';
+					}
+					else
+					{
+						if(elem.left.type!='Literal' && elem.right.type=='Literal')
+						{
+							elem.erroreLocale = 'E('+elem.id+') + ['+'[ '+elem.left.erroreLocale+'] * '+elem.left.coefficienteAmpl +' ]';
 
+						}
+						else
+						{
+							elem.erroreLocale = 'E('+elem.id+')';
+						}
+					}
+					
 				}
-				if(elem.left.type=='Literal' && elem.right.type=='Literal')
-				{
-					elem.erroreLocale = 'E('+elem.id+')';
-
-				}
+				*/
 			}
   		}
   		return lista;
@@ -171,7 +193,7 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
   				//se non è il nodo radice, calcolo il valore dell'arco entrante(ogni nodo ha solo 1 arco entrante, tranne il root)
   				//elem.coefficienteAmpl = ""+elem.label+"/"+elem.parentNode.label+"* partialDerivative("+elem.parentNode.label+","+elem.label+")";
   				//In base all'operazione trovo il coefficiente di amplificazione
-  				if(elem.parentNode.type == "BinaryExpression" && elem.type != "Literal")
+  				if(elem.parentNode.type == "BinaryExpression")
   				{
 
   					console.log(elem.parentNode.operator);
@@ -219,6 +241,7 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 	  					}
 	  				}
 	  			}
+	  			
   			}
   		}
   		return lista;
@@ -263,6 +286,7 @@ angular.module('errorValutationSolverApp').service('treeGenerator', function ()
 		}
 
 		lista = setValueOfLeaves(lista);
+		console.log(lista);
 		lista.push(x);
 		lista = setValuesOfEdges(lista);
 		lista = calcolaErroriLocali(lista);
